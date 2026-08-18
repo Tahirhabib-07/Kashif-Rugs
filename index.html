@@ -1233,38 +1233,67 @@ function renderAdminLogin(){
   <div class="login-shell">
     <div class="card-form" style="max-width:400px;width:100%;">
       <h3 style="text-align:center;">Admin Login</h3>
-      <p style="text-align:center;font-size:.82rem;color:var(--brown-2);">Demo credentials — Username: <strong>admin</strong> · Password: <strong>admin123</strong></p>
+
+      <p style="text-align:center;font-size:.82rem;color:var(--brown-2);">
+        Login with your administrator account
+      </p>
+
       <form id="adminLoginForm">
-        <div class="field"><label>Username</label><input required type="text" name="user"></div>
-        <div class="field"><label>Password</label><input required type="password" name="pass"></div>
-        <div id="loginError" style="color:#8a2b2b;font-size:.82rem;margin-bottom:10px;"></div>
-        <button type="submit" class="btn btn-primary btn-block">Log In</button>
+
+        <div class="field">
+          <label>Email</label>
+          <input required type="email" name="email">
+        </div>
+
+        <div class="field">
+          <label>Password</label>
+          <input required type="password" name="password">
+        </div>
+
+        <div id="loginError"
+             style="color:#8a2b2b;font-size:.82rem;margin-bottom:10px;">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          Log In
+        </button>
+
       </form>
     </div>
   </div>`;
 }
-function attachAdminEvents(){
-  const lf = document.getElementById('adminLoginForm');
-  if(lf) lf.onsubmit = (e)=>{
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    if(fd.get('user')==='admin' && fd.get('pass')==='admin123'){
-      STORE.adminAuthed = true; nav('admin','dashboard');
-    } else {
-      document.getElementById('loginError').textContent = 'Invalid username or password.';
-    }
-  };
-  const sf = document.getElementById('settingsForm');
-  if(sf) sf.onsubmit = async (e)=>{
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    STORE.settings.homeDelivery = +fd.get('homeDelivery');
-    STORE.settings.pickupCost = +fd.get('pickupCost');
-    await saveSettings();
-    showToast('Delivery settings updated');
-  };
+const lf = document.getElementById('adminLoginForm');
+
+if(lf) lf.onsubmit = async (e)=>{
+  e.preventDefault();
+
+  const fd = new FormData(e.target);
+
+  const email = fd.get('email');
+  const password = fd.get('password');
+
+  const { data, error } = await sbClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if(error){
+    document.getElementById('loginError').textContent =
+      error.message;
+    return;
+  }
+
+  STORE.adminAuthed = true;
+
+  nav('admin','dashboard');
+};
+async function adminLogout(){
+  await sbClient.auth.signOut();
+
+  STORE.adminAuthed = false;
+
+  nav('admin');
 }
-function adminLogout(){ STORE.adminAuthed = false; nav('admin'); }
 
 function adminTabContent(tab){
   if(tab==='products') return adminProducts();
